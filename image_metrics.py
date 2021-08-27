@@ -4,10 +4,12 @@ import torch
 import piq
 import cv2
 import sys
+import os
+from pathlib import Path
 
 
 @torch.no_grad()
-def main(img1, img2):
+def calMetrics(img1, img2):
     # Read RGB image and it's noisy version
     x = torch.tensor(cv2.imread(img1)).permute(2, 0, 1)[None, ...] / 255.
     y = torch.tensor(cv2.imread(img2)).permute(2, 0, 1)[None, ...] / 255.
@@ -159,12 +161,64 @@ if __name__ == '__main__':
     #orig = '/media/home/alice/Photos/preview/2003/01/17/20030117_1_320_0.ppm'
     #jpg = '/media/home/alice/Photos/preview/2003/01/17/20030117_1_320_0.jpg'
     #webp = '/media/home/alice/Photos/preview/2003/01/17/20030117_1_320_0.webp'
-    orig = sys.argv[1]
-    jpg = sys.argv[2]
-    webp = sys.argv[3]
-    print("----- compare %s - %s" % (orig, jpg))
-    metrics = main(orig, jpg)
-    printMetrics(metrics)
-    print("----- compare %s - %s" % (orig, webp))
-    metrics = main(orig, webp)
-    printMetrics(metrics)
+    #orig = sys.argv[1]
+    #jpg = sys.argv[2]
+    #webp = sys.argv[3]
+    #print("----- compare %s - %s" % (orig, jpg))
+    #metrics = calMetrics(orig, jpg)
+    #printMetrics(metrics)
+    #print("----- compare %s - %s" % (orig, webp))
+    #metrics = calMetrics(orig, webp)
+    #printMetrics(metrics)
+    home = sys.argv[1]
+    width = sys.argv[2]
+    print("FIELNAME JPG_SIZE WEBP_SIZE BRISQUE_INDEX BRISQUE_LOSS CONTENT_LOSS DISTS_LOSS FSIM_INDEX FSIM_LOSS GMSD_INDEX GMSD_LOSS HaarPSI_INDEX HaarPSI_LOSS LPIPS_LOSS MDSI_INDEX MDSI_LOSS MS_SSIM_INDEX MS_SSIM_LOSS MS_GMSD_INDEX MS_GMSD_LOSS PSNR PieAPP_LOSS SSIM_INDEX SSIM_LOSS STYLE TV_INDEX TV_LOSS VIF_INDEX VIF_LOSS VSI_INDEX VSI_LOSS")
+    for dirpath, dirs, files in os.walk(home):
+        for filename in files:
+            if not filename.endswith(width + "_0.ppm"):
+                continue
+            ppmName = os.path.join(dirpath,filename)
+            #print(ppmName)
+            fname = Path(ppmName)
+            jpgName = fname.with_suffix('.jpg')
+            if not os.path.isfile(jpgName):
+                jpgName = fname.with_suffix('.png')
+            # try again
+            if not os.path.isfile(jpgName):
+                print("not exist: " + pName)
+                continue
+            #print(jpgName)
+            webpName = fname.with_suffix('.webp')
+            #print(webpName)
+            if not os.path.isfile(webpName):
+                print("not exist: " + webpName)
+                continue
+
+            jpgSize = os.path.getsize(jpgName)
+            if jpgSize <= 0:
+                print("wrong size: " + jpgName)
+                continue
+            webpSize = os.path.getsize(webpName)
+            if webpSize <= 0:
+                print("wrong size: " + webpName)
+                continue
+            jpgMetrics = calMetrics(ppmName, str(jpgName.resolve()))
+            webpMetrics = calMetrics(ppmName, str(webpName.resolve()))
+            print("%s(%s) %s %s %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f %0.4f" % (filename, jpgName.suffix, jpgSize, webpSize,
+             metrics["brisque_index"], metrics["brisque_loss"],
+             metrics["content_loss"],
+             metrics["dists_loss"],
+             metrics["fsim_index"], metrics["fsim_loss"],
+             metrics["gmsd_index"], metrics["gmsd_loss"],
+             metrics["haarpsi_index"], metrics["haarpsi_loss"],
+             metrics["lpips_loss"],
+             metrics["mdsi_index"], metrics["mdsi_loss"],
+             metrics["ms_ssim_index"], metrics["ms_ssim_loss"],
+             metrics["ms_gmsd_index"], metrics["ms_gmsd_loss"],
+             metrics["psnr_index"],
+             metrics["pieapp_loss"],
+             metrics["ssim_index"], metrics["ssim_loss"],
+             metrics["style_loss"],
+             metrics["tv_index"], metrics["tv_loss"],
+             metrics["vif_index"], metrics["vif_loss"],
+             metrics["vsi_index"], metrics["vsi_loss"]))
